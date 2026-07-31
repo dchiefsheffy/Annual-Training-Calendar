@@ -292,7 +292,8 @@
       Facility: "Advance Hose Line to 3rd Floor of Tower",
       Officer: "Successfully Mentoring",
       Engineer: "Positioning Pumping Apparatus",
-      EMS: "EMS Protocol Unconcsious"
+      EMS: "EMS Protocol Unconcsious",
+      EMSSkills: "EPI IM Administration"
     }
   };
   let highlightsSourceLabel = "Showing placeholder monthly highlights — no live sheet connected yet.";
@@ -414,7 +415,7 @@
   }
 
   // Reads the "Monthly Highlights" tab: one row per month, with columns
-  // Month | Facility Training | Officer Training | Engineer Training | EMS Training
+  // Month | Facility Training | Officer Training | Engineer Training | EMS Protocol Review | EMS Skills
   function loadMonthlyHighlights(){
     return new Promise((resolve) => {
       if (!CONFIG.highlightsGid || CONFIG.highlightsGid.indexOf("PASTE_") === 0) { resolve(false); return; }
@@ -447,7 +448,8 @@
             facility: cols.indexOf('Facility Training'),
             officer: cols.indexOf('Officer Training'),
             engineer: cols.indexOf('Engineer Training'),
-            ems: cols.indexOf('EMS Training')
+            ems: cols.indexOf('EMS Protocol Review'),
+            emsSkills: cols.indexOf('EMS Skills')
           };
 
           const data = {};
@@ -467,7 +469,8 @@
               Facility: cellText(idx.facility),
               Officer: cellText(idx.officer),
               Engineer: cellText(idx.engineer),
-              EMS: cellText(idx.ems)
+              EMS: cellText(idx.ems),
+              EMSSkills: cellText(idx.emsSkills)
             };
           });
 
@@ -591,7 +594,8 @@
       ['Facility', 'Facility Training'],
       ['Officer', 'Officer Training'],
       ['Engineer', 'Engineer Training'],
-      ['EMS', 'EMS Training']
+      ['EMS', 'EMS Protocol Review'],
+      ['EMSSkills', 'EMS Skills']
     ];
 
     el.innerHTML = '';
