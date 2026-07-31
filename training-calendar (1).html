@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #141a21;
+    --panel: #1e2731;
+    --panel-dim: #171e26;
+    --brass: #b3372c;
+    --shift-a: #c9483f;
+    --shift-b: #4f9d63;
+    --shift-c: #4c7ea8;
+    --paper: #e9e7df;
+    --muted: #8b93a1;
+    --line: rgba(233,231,223,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+  }
+  .board{
+    max-width:1100px;
+    margin:0 auto;
+    padding:32px 20px 60px;
+  }
+  header.masthead{
+    border-bottom:2px solid var(--brass);
+    padding-bottom:18px;
+    margin-bottom:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .masthead-title{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    font-size:clamp(2.2rem,5.5vw,3.4rem);
+    color:var(--brass);
+  }
+  .highlights{
+    background:var(--panel);
+    border-left:4px solid var(--brass);
+    border-radius:4px;
+    padding:14px 16px;
+    margin-bottom:22px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.8rem;
+    line-height:1.6;
+  }
+  .highlights-label{
+    display:block;
+    color:var(--brass);
+    font-weight:600;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    font-size:0.72rem;
+    margin-bottom:6px;
+  }
+  .highlights-list{
+    list-style:disc;
+    margin:0;
+    padding-left:20px;
+    color:var(--paper);
+  }
+  .highlights-list li{ margin-bottom:2px; }
+
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-bottom:18px;
+  }
+  .nav{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .nav button{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.8rem;
+    padding:8px 14px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:border-color 0.15s;
+  }
+  .nav button:hover, .nav button:focus-visible{ border-color:var(--brass); outline:none; }
+  .nav .current{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    font-size:1.1rem;
+    min-width:190px;
+    text-align:center;
+  }
+
+  .legend{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+  }
+  .legend-item{ display:flex; align-items:center; gap:6px; color:var(--muted); }
+  .swatch{ width:11px; height:11px; border-radius:2px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:6px;
+  }
+  .dow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.68rem;
+    letter-spacing:0.08em;
+    color:var(--muted);
+    text-transform:uppercase;
+    padding:4px 6px;
+  }
+  .day-cell{
+    background:var(--panel);
+    border-left:4px solid transparent;
+    border-radius:4px;
+    padding:8px 9px 10px;
+    min-height:112px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .day-cell.pad{ opacity:0.4; }
+  .day-cell.pad .date-num{ color:var(--muted); }
+  .day-cell.today{ box-shadow:0 0 0 1px var(--brass) inset; }
+  .day-top{ display:flex; justify-content:space-between; align-items:center; }
+  .date-num{ font-family:'IBM Plex Mono',monospace; font-size:0.82rem; color:var(--muted); }
+  .shift-badge{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:0.65rem;
+    letter-spacing:0.05em;
+    padding:2px 6px;
+    border-radius:3px;
+    color:var(--ink);
+  }
+  .training-list{ display:flex; flex-direction:column; gap:4px; }
+  .training-item{
+    font-size:0.68rem;
+    line-height:1.25;
+    color:var(--paper);
+    padding-top:4px;
+    border-top:1px dashed var(--line);
+  }
+
+  footer{
+    margin-top:28px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.68rem;
+    color:var(--muted);
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+
+  @media (max-width:680px){
+    .grid{ grid-template-columns:1fr; }
+    .dow{ display:none; }
+    .day-cell{ flex-direction:row; align-items:flex-start; gap:12px; min-height:unset; }
+    .day-top{ flex-direction:column; align-items:flex-start; gap:4px; min-width:52px; }
+  }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <header class="masthead">
+    <div class="masthead-title">Training Calendar</div>
+  </header>
+
+  <div class="highlights" id="highlightsBox">
+    <span class="highlights-label">This Month</span>
+    <ul id="highlightsList" class="highlights-list"></ul>
+  </div>
+
+  <div class="controls">
+    <div class="nav">
+      <button id="prevBtn" aria-label="Previous month">‹ Prev</button>
+      <div class="current" id="currentLabel"></div>
+      <button id="nextBtn" aria-label="Next month">Next ›</button>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:var(--shift-a)"></span>A Shift</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--shift-b)"></span>B Shift</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--shift-c)"></span>C Shift</div>
+    </div>
+  </div>
+
+  <div class="grid" id="dowRow"></div>
+  <div class="grid" id="calGrid" style="margin-top:6px;"></div>
+
+  <footer>
+    <span id="sourceNote">Showing placeholder training dates — no live sheet connected yet.</span>
+  </footer>
+</div>
+
+<script>
+  // ---- Shift math -------------------------------------------------
+  // 48/96 rotation, 3 shifts, 6-day repeating cycle.
+  // Reference: Aug 1 2026 = day 0 of the cycle, C shift on duty.
+  const CYCLE_START = Date.UTC(2026, 7, 1); // Aug 1 2026 (months are 0-indexed)
+
+  function getShift(y, m, d) {
+    const t = Date.UTC(y, m, d);
+    const diffDays = Math.round((t - CYCLE_START) / 86400000);
+    const mod = ((diffDays % 6) + 6) % 6;
+    if (mod === 0 || mod === 1) return 'C';
+    if (mod === 2 || mod === 3) return 'A';
+    return 'B';
+  }
+
+  const SHIFT_COLOR = { A: 'var(--shift-a)', B: 'var(--shift-b)', C: 'var(--shift-c)' };
+
+  // ---- Live data source ---------------------------------------------
+  // Google's plain CSV export link doesn't allow other webpages to fetch it
+  // (a CORS restriction), so this uses Google's "gviz" endpoint instead,
+  // which is built to be embedded cross-domain via a <script> tag.
+  const CONFIG = {
+    sheetId: "1G5CylDOBDtpbH4uYKPTRAdZVz1QNQHIBJlI29WA5xIY",
+    gid: "736785777",
+    // gid of the new "Monthly Highlights" tab — paste it in once that tab exists.
+    highlightsGid: "1375661603",
+    refreshMinutes: 30 // how often the page re-checks the sheet while left open
+  };
+
+  // Shown until a live link loads successfully — this is your real August 2026 data as a preview.
+  const placeholderData = {
+    "2026-08-01": ["Ropes and Knots (Firefighter)", "Officer Development (Officer)"],
+    "2026-08-02": ["Officer Development (Officer)", "EMS Protocol Unconcsious (Firefighter)"],
+    "2026-08-03": ["Officer Development (Officer)", "Ropes and Knots (Firefighter)"],
+    "2026-08-04": ["Officer Development (Officer)", "EMS Protocol Unconcsious (Firefighter)"],
+    "2026-08-05": ["Officer Development (Officer)", "Ropes and Knots (Firefighter)"],
+    "2026-08-06": ["Officer Development (Officer)", "EMS Protocol Unconcsious (Firefighter)"],
+    "2026-08-07": ["Positioning Pumping Apparatus (Engineer)", "Mayday Procedures (Firefighter)"],
+    "2026-08-08": ["Positioning Pumping Apparatus (Engineer)", "EMS Skill- EPI IM Administration (Firefighter)"],
+    "2026-08-09": ["Positioning Pumping Apparatus (Engineer)", "Mayday Procedures (Firefighter)"],
+    "2026-08-10": ["Positioning Pumping Apparatus (Engineer)", "EMS Skill- EPI IM Administration (Firefighter)"],
+    "2026-08-11": ["Positioning Pumping Apparatus (Engineer)", "Mayday Procedures (Firefighter)"],
+    "2026-08-12": ["Positioning Pumping Apparatus (Engineer)", "EMS Skill- EPI IM Administration (Firefighter)"],
+    "2026-08-13": ["Advance Hose Line to 3rd Floor of Tower (Facility)", "Forcible Entry (Firefighter)"],
+    "2026-08-14": ["Advance Hose Line to 3rd Floor of Tower (Facility)", "EMS Protocol Traumatic Arrest (Firefighter)"],
+    "2026-08-15": ["Advance Hose Line to 3rd Floor of Tower (Facility)", "Forcible Entry (Firefighter)"],
+    "2026-08-16": ["Advance Hose Line to 3rd Floor of Tower (Facility)", "EMS Protocol Traumatic Arrest (Firefighter)"],
+    "2026-08-17": ["Advance Hose Line to 3rd Floor of Tower (Facility)", "Forcible Entry (Firefighter)"],
+    "2026-08-18": ["Advance Hose Line to 3rd Floor of Tower (Facility)", "EMS Protocol Traumatic Arrest (Firefighter)"],
+    "2026-08-19": ["Successfully Mentoring (Officer)", "Bunker Gear Drill (Firefighter)"],
+    "2026-08-20": ["Successfully Mentoring (Officer)", "EMS Protocol- Chest Pain/ACS/STEMI (Firefighter)"],
+    "2026-08-21": ["Successfully Mentoring (Officer)", "Bunker Gear Drill (Firefighter)"],
+    "2026-08-22": ["Successfully Mentoring (Officer)", "EMS Protocol- Chest Pain/ACS/STEMI (Firefighter)"],
+    "2026-08-23": ["Successfully Mentoring (Officer)", "Bunker Gear Drill (Firefighter)"],
+    "2026-08-24": ["Successfully Mentoring (Officer)", "EMS Protocol- Chest Pain/ACS/STEMI (Firefighter)"],
+    "2026-08-25": ["Hydrant Spotting (Engineer)"],
+    "2026-08-26": ["Hydrant Spotting (Engineer)"],
+    "2026-08-27": ["Hydrant Spotting (Engineer)"],
+    "2026-08-28": ["Hydrant Spotting (Engineer)"],
+    "2026-08-29": ["Hydrant Spotting (Engineer)"],
+    "2026-08-30": ["Hydrant Spotting (Engineer)"],
+    "2026-08-31": ["SCBA (Firefighter)"]
+  };
+
+  let trainingData = placeholderData;
+  let dataSourceLabel = "Showing placeholder training dates — no live sheet connected yet.";
+
+  // Monthly category highlights, keyed "YYYY-M" (month is 0-indexed to match viewMonth).
+  // Shown until the Monthly Highlights sheet tab is connected — this is a preview example.
+  let highlightData = {
+    "2026-7": {
+      Facility: "Advance Hose Line to 3rd Floor of Tower",
+      Officer: "Successfully Mentoring",
+      Engineer: "Positioning Pumping Apparatus",
+      EMS: "EMS Protocol Unconcsious"
+    }
+  };
+  let highlightsSourceLabel = "Showing placeholder monthly highlights — no live sheet connected yet.";
+
+  function keyFromLocalDate(d){
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  }
+
+  function expandDateRangeObjs(startDate, endDate){
+    let cur = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const last = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    const dates = [];
+    let guard = 0;
+    while (cur <= last && guard < 60) { // safety cap against malformed ranges
+      dates.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+      guard++;
+    }
+    return dates;
+  }
+
+  // gviz returns date cells as the string "Date(YYYY,M,D)" (month already 0-indexed)
+  function parseGvizDate(cell){
+    if (cell && typeof cell.v === 'string') {
+      const m = cell.v.match(/^Date\((\d+),(\d+),(\d+)/);
+      if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10));
+    }
+    if (cell && cell.f) {
+      const d = new Date(cell.f);
+      if (!isNaN(d)) return d;
+    }
+    return null;
+  }
+
+  function loadLiveTrainingData(){
+    return new Promise((resolve) => {
+      if (!CONFIG.sheetId) { resolve(false); return; }
+
+      const cbName = 'onSheetData_' + Date.now();
+      const url = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?tqx=out:json;responseHandler:${cbName}&gid=${CONFIG.gid}&_=${Date.now()}`;
+      let settled = false;
+
+      function cleanup(){
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      const timeoutId = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        dataSourceLabel = "Couldn't reach the live sheet (timed out) — showing placeholder dates.";
+        resolve(false);
+      }, 10000);
+
+      window[cbName] = function(json) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        try {
+          const cols = (json.table.cols || []).map(c => (c.label || '').trim());
+          const idx = {
+            start: cols.indexOf('Start Date'),
+            end: cols.indexOf('End Date'),
+            training: cols.indexOf('Training'),
+            category: cols.indexOf('ISO Category')
+          };
+
+          const data = {};
+          (json.table.rows || []).forEach(row => {
+            const cells = row.c || [];
+            const startCell = idx.start >= 0 ? cells[idx.start] : null;
+            const trainingCell = idx.training >= 0 ? cells[idx.training] : null;
+            if (!startCell || !trainingCell || trainingCell.v === null || trainingCell.v === undefined) return;
+
+            const startDate = parseGvizDate(startCell);
+            if (!startDate) return;
+
+            const endCell = idx.end >= 0 ? cells[idx.end] : null;
+            const endDate = endCell ? parseGvizDate(endCell) : null;
+
+            const categoryCell = idx.category >= 0 ? cells[idx.category] : null;
+            const category = (categoryCell && categoryCell.v) ? String(categoryCell.v).trim() : '';
+            const trainingName = String(trainingCell.v).trim();
+            const label = category ? `${trainingName} (${category})` : trainingName;
+
+            expandDateRangeObjs(startDate, endDate || startDate).forEach(d => {
+              const key = keyFromLocalDate(d);
+              if (!data[key]) data[key] = [];
+              data[key].push(label);
+            });
+          });
+
+          if (Object.keys(data).length === 0) throw new Error('No rows parsed');
+          trainingData = data;
+          dataSourceLabel = "Live — pulling from your Google Sheet.";
+          resolve(true);
+        } catch (e) {
+          console.error('Could not parse live sheet data, showing placeholders instead.', e);
+          dataSourceLabel = "Couldn't read the live sheet data — showing placeholder dates.";
+          resolve(false);
+        } finally {
+          cleanup();
+        }
+      };
+
+      const script = document.createElement('script');
+      script.src = url;
+      script.onerror = function(){
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        cleanup();
+        dataSourceLabel = "Couldn't reach the live sheet — showing placeholder dates. Check the sharing setting.";
+        resolve(false);
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  // Reads the "Monthly Highlights" tab: one row per month, with columns
+  // Month | Facility Training | Officer Training | Engineer Training | EMS Training
+  function loadMonthlyHighlights(){
+    return new Promise((resolve) => {
+      if (!CONFIG.highlightsGid || CONFIG.highlightsGid.indexOf("PASTE_") === 0) { resolve(false); return; }
+
+      const cbName = 'onHighlightsData_' + Date.now();
+      const url = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?tqx=out:json;responseHandler:${cbName}&gid=${CONFIG.highlightsGid}&_=${Date.now()}`;
+      let settled = false;
+
+      function cleanup(){
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      const timeoutId = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        highlightsSourceLabel = "Couldn't reach the monthly highlights tab (timed out).";
+        resolve(false);
+      }, 10000);
+
+      window[cbName] = function(json) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        try {
+          const cols = (json.table.cols || []).map(c => (c.label || '').trim());
+          const idx = {
+            month: cols.indexOf('Month'),
+            facility: cols.indexOf('Facility Training'),
+            officer: cols.indexOf('Officer Training'),
+            engineer: cols.indexOf('Engineer Training'),
+            ems: cols.indexOf('EMS Training')
+          };
+
+          const data = {};
+          (json.table.rows || []).forEach(row => {
+            const cells = row.c || [];
+            const monthCell = idx.month >= 0 ? cells[idx.month] : null;
+            if (!monthCell) return;
+            const monthDate = parseGvizDate(monthCell);
+            if (!monthDate) return;
+
+            const key = `${monthDate.getFullYear()}-${monthDate.getMonth()}`;
+            const cellText = (i) => {
+              const c = i >= 0 ? cells[i] : null;
+              return (c && c.v !== null && c.v !== undefined) ? String(c.v).trim() : '';
+            };
+            data[key] = {
+              Facility: cellText(idx.facility),
+              Officer: cellText(idx.officer),
+              Engineer: cellText(idx.engineer),
+              EMS: cellText(idx.ems)
+            };
+          });
+
+          if (Object.keys(data).length === 0) throw new Error('No rows parsed');
+          highlightData = data;
+          highlightsSourceLabel = "Live.";
+          resolve(true);
+        } catch (e) {
+          console.error('Could not parse monthly highlights, showing placeholder instead.', e);
+          highlightsSourceLabel = "Couldn't read the monthly highlights tab.";
+          resolve(false);
+        } finally {
+          cleanup();
+        }
+      };
+
+      const script = document.createElement('script');
+      script.src = url;
+      script.onerror = function(){
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        cleanup();
+        highlightsSourceLabel = "Couldn't reach the monthly highlights tab.";
+        resolve(false);
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  // ---- Calendar rendering -------------------------------------------
+  const dowRow = document.getElementById('dowRow');
+  const calGrid = document.getElementById('calGrid');
+  const currentLabel = document.getElementById('currentLabel');
+  const sourceNote = document.getElementById('sourceNote');
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  DOW_NAMES.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'dow';
+    el.textContent = n;
+    dowRow.appendChild(el);
+  });
+
+  let viewYear = 2026, viewMonth = 7; // start on August 2026
+
+  function pad2(n){ return n.toString().padStart(2,'0'); }
+
+  function render() {
+    currentLabel.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+    calGrid.innerHTML = '';
+
+    const firstDow = new Date(Date.UTC(viewYear, viewMonth, 1)).getUTCDay();
+    const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+    const totalCells = Math.ceil((firstDow + daysInMonth) / 7) * 7;
+    const trailingCount = totalCells - firstDow - daysInMonth;
+
+    const now = new Date();
+    const isCurrentMonth = now.getUTCFullYear() === viewYear && now.getUTCMonth() === viewMonth;
+
+    function padCell(dateObj) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell pad';
+      const top = document.createElement('div');
+      top.className = 'day-top';
+      top.innerHTML = `<span class="date-num">${dateObj.getUTCDate()}</span>`;
+      cell.appendChild(top);
+      calGrid.appendChild(cell);
+    }
+
+    // leading days from the previous month
+    for (let i = 0; i < firstDow; i++) {
+      const d = new Date(Date.UTC(viewYear, viewMonth, 1 - (firstDow - i)));
+      padCell(d);
+    }
+
+    // the month itself
+    for (let d = 1; d <= daysInMonth; d++) {
+      const shift = getShift(viewYear, viewMonth, d);
+      const dateKey = `${viewYear}-${pad2(viewMonth+1)}-${pad2(d)}`;
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      cell.style.borderLeftColor = SHIFT_COLOR[shift];
+      if (isCurrentMonth && d === now.getUTCDate()) cell.classList.add('today');
+
+      const top = document.createElement('div');
+      top.className = 'day-top';
+      top.innerHTML = `<span class="date-num">${d}</span><span class="shift-badge" style="background:${SHIFT_COLOR[shift]}">${shift}</span>`;
+      cell.appendChild(top);
+
+      const list = document.createElement('div');
+      list.className = 'training-list';
+      (trainingData[dateKey] || []).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'training-item';
+        row.textContent = item;
+        list.appendChild(row);
+      });
+      cell.appendChild(list);
+
+      calGrid.appendChild(cell);
+    }
+
+    // trailing days from the next month
+    for (let j = 1; j <= trailingCount; j++) {
+      const d = new Date(Date.UTC(viewYear, viewMonth, daysInMonth + j));
+      padCell(d);
+    }
+
+    if (sourceNote) sourceNote.textContent = dataSourceLabel;
+    renderHighlights();
+  }
+
+  function renderHighlights(){
+    const el = document.getElementById('highlightsList');
+    if (!el) return;
+    const key = `${viewYear}-${viewMonth}`;
+    const entry = highlightData[key];
+    const categories = [
+      ['Facility', 'Facility Training'],
+      ['Officer', 'Officer Training'],
+      ['Engineer', 'Engineer Training'],
+      ['EMS', 'EMS Training']
+    ];
+
+    el.innerHTML = '';
+    let any = false;
+    categories.forEach(([field, label]) => {
+      const text = entry && entry[field] ? entry[field] : '';
+      if (!text) return;
+      any = true;
+      const li = document.createElement('li');
+      li.textContent = `${label}: ${text}`;
+      el.appendChild(li);
+    });
+    if (!any) {
+      const li = document.createElement('li');
+      li.textContent = 'No monthly highlights entered yet.';
+      li.style.color = 'var(--muted)';
+      li.style.listStyle = 'none';
+      li.style.marginLeft = '-20px';
+      el.appendChild(li);
+    }
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    render();
+  });
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    render();
+  });
+
+  render(); // paint immediately with placeholders so the page never looks blank
+
+  (async function init() {
+    await Promise.all([loadLiveTrainingData(), loadMonthlyHighlights()]);
+    render();
+    if (CONFIG.refreshMinutes > 0) {
+      setInterval(async () => {
+        await Promise.all([loadLiveTrainingData(), loadMonthlyHighlights()]);
+        render();
+      }, CONFIG.refreshMinutes * 60 * 1000);
+    }
+  })();
+</script>
+
+</body>
+</html>
