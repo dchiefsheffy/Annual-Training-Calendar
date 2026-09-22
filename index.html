@@ -516,7 +516,8 @@
     dowRow.appendChild(el);
   });
 
-  let viewYear = 2026, viewMonth = 7; // start on August 2026
+  const today = new Date();
+  let viewYear = today.getFullYear(), viewMonth = today.getMonth(); // start on the current month
 
   function pad2(n){ return n.toString().padStart(2,'0'); }
 
